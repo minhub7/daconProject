@@ -12,3 +12,7 @@ Machine Learning 기법을 공부하기 위해 진행한 Dacon Project 관련 �
   - Using CountVectorizer and CosineSimilarity
 - 2022.05.25 (wed) Update ver.0.1 source code
   - Using Graphcodebert, negative sampling
+- 2022.06.01 (wed) Add .ipynb file that create data set for each level
+  1. Random pairs data
+  2. Middle similar positive, negative pairs
+  3. Low similar positive pairs, high similar negative pairs
