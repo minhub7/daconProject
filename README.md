@@ -16,3 +16,5 @@ Machine Learning 기법을 공부하기 위해 진행한 Contest 관련 Project 
   1. Random pairs data
   2. Middle similar positive, negative pairs
   3. Low similar positive pairs, high similar negative pairs
+- 2022.06.02 (thu) Update create data set file and EDA, Add train file
+  - Upgrade preprocessing - 다중 주석에 대한 전처리 추가, 필요없는 url (https...) 삭제
