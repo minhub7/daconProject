@@ -2,3 +2,5 @@ data/
 result/
 .ipynb_checkpoints
 runs/
+models/
+submissions/
