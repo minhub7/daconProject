@@ -1,4 +1,4 @@
-# ML_Contets_Project
+# ML_Contest_Project
 Machine Learning 기법을 공부하기 위해 진행한 Contest 관련 Project file 입니다.    
 
 ## @ConsumerDataAnalysis
