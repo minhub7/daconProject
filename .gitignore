@@ -1,6 +1,14 @@
+# ignore data file
 data/
+*.zip
+
+# Result file generated when code execute
 result/
+results/
+submissions/
+
+# etc...
 .ipynb_checkpoints
 runs/
 models/
-submissions/
+wandb/
