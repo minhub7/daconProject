@@ -3,7 +3,7 @@
 import torch
 
 class ConfMatrix(object):
-    def __init__(self, num_classes):
+    def __init__(self, num_classes):    # 4
         self.num_classes = num_classes
         self.mat = None
 

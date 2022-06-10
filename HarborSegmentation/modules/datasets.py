@@ -16,7 +16,7 @@ import os
 def transform(image, label=None, logits=None, crop_size=(512, 512), scale_size=(0.8, 1.0), augmentation=True):
     # Random rescale image
     raw_w, raw_h = image.size
-    scale_ratio = random.uniform(scale_size[0], scale_size[1])
+    scale_ratio = random.uniform(scale_size[0], scale_size[1])  # 0.8 ~ 1.0 사이 사이즈로 scale
 
     resized_size = (int(raw_h * scale_ratio), int(raw_w * scale_ratio))
     image = transforms_f.resize(image, resized_size, Image.BILINEAR)
@@ -29,6 +29,7 @@ def transform(image, label=None, logits=None, crop_size=(512, 512), scale_size=(
     if crop_size == -1:  # use original im size without crop or padding
         crop_size = (raw_h, raw_w)
 
+    # Resized image가 crop_size보다 작을 경우 padding 수행
     if crop_size[0] > resized_size[0] or crop_size[1] > resized_size[1]:
         right_pad, bottom_pad = max(crop_size[1] - resized_size[1], 0), max(crop_size[0] - resized_size[0], 0)
         image = transforms_f.pad(image, padding=(0, 0, right_pad, bottom_pad), padding_mode='reflect')
@@ -102,7 +103,7 @@ def batch_transform(data, label, logits, crop_size, scale_size, apply_augmentati
     data_list, label_list, logits_list = [], [], []
     device = data.device
 
-    for k in range(data.shape[0]):
+    for k in range(data.shape[0]):  # 행 범위 만큼 반복 - ex) 480 * 360 -> range(480)
         data_pil, label_pil, logits_pil = tensor_to_pil(data[k], label[k], logits[k])
         aug_data, aug_label, aug_logits = transform(data_pil, label_pil, logits_pil,
                                                     crop_size=crop_size,
@@ -120,18 +121,19 @@ def batch_transform(data, label, logits, crop_size, scale_size, apply_augmentati
 # --------------------------------------------------------------------------------
 # Define indices for labelled, unlabelled training images, and test images
 # --------------------------------------------------------------------------------
-def get_harbor_idx(root, train=True, is_label=True ,label_num=15):
+def get_harbor_idx(root, train=True, is_label=True, split_size=0.1):
     if train:
         if is_label:
             classes = ['container_truck', 'forklift', 'reach_stacker', 'ship']
             image_path = glob(os.path.join(root, 'train', 'labeled_images', '*.jpg'))
-            image_idx_list = list(map(lambda x : x.split('/')[-1].split('.')[0], image_path))
+            image_idx_list = list(map(lambda x: x.split('/')[-1].split('.')[0], image_path))  # image_idx_list = filename
             train_idx = []
             valid_idx = []
             for c in classes:
-                matched_idx = [i for i in image_idx_list if c in i]
-                train_idx.extend(matched_idx[:label_num])
-                valid_idx.extend(matched_idx[label_num:])
+                matched_idx = [i for i in image_idx_list if c in i]  # 각 class에 해당하는 data 파일
+                _split = int(len(matched_idx) * (1 - split_size))  # 20개면 20 * 0.9 = 18
+                train_idx.extend(matched_idx[:_split])   # split_size 만큼 분리
+                valid_idx.extend(matched_idx[_split:])   # 나머지는 valid_idx
             return train_idx, valid_idx
         else:
             image_path = glob(os.path.join(root, 'train', 'unlabeled_images', '*.jpg'))
@@ -165,12 +167,12 @@ class BuildDataset(Dataset):
                 image_root = Image.open(self.root + f'/train/unlabeled_images/{self.idx_list[index]}.jpg')
                 label_root = None
 
+            # augmentation 수행, label의 0인 차원 삭제 (squeeze)
             image, label = transform(image_root, label_root, None, self.crop_size, self.scale_size, self.augmentation)
             if label is not None:
                 return image, label.squeeze(0)
             else:
                 return image
-
         else:
             file_name = f'{self.idx_list[index]}.jpg'
             image_root = Image.open(self.root + f'/test/images/{file_name}')
@@ -185,20 +187,23 @@ class BuildDataset(Dataset):
 # Create data loader in PyTorch format
 # --------------------------------------------------------------------------------
 class BuildDataLoader:
-    def __init__(self, num_labels, dataset_path, batch_size):
+    def __init__(self, num_labels, dataset_path, batch_size, split_size=0.1):
         self.data_path = dataset_path
         self.im_size = [513, 513]
-        self.crop_size = [321, 321]
-        self.num_segments = 5
+        self.crop_size = [321, 321]  # original: 321, 321
+        self.num_segments = 5   # ConfMatrix()에 들어가는 파라미터
         self.scale_size = (0.5, 1.5)
         self.batch_size = batch_size
-        self.train_l_idx, self.valid_l_idx = get_harbor_idx(self.data_path, train=True, is_label=True, label_num=num_labels)
+        self.split_size = split_size
+        # idx는 file name임
+        self.train_l_idx, self.valid_l_idx = get_harbor_idx(self.data_path, train=True, is_label=True, split_size=self.split_size)
         self.train_u_idx = get_harbor_idx(self.data_path, train=True, is_label=False)
         self.test_idx = get_harbor_idx(self.data_path, train=False)
 
         if num_labels == 0:  # using all data
             self.train_l_idx = self.train_u_idx
 
+    # labeling 된 image는 augmentation이 들어감
     def build(self, supervised=False):
         train_l_dataset = BuildDataset(self.data_path, self.train_l_idx,
                                        crop_size=self.crop_size, scale_size=self.scale_size,
@@ -209,13 +214,14 @@ class BuildDataLoader:
         valid_l_dataset = BuildDataset(self.data_path, self.valid_l_idx,
                                        crop_size=self.crop_size, scale_size=self.scale_size,
                                        augmentation=False, train=True, is_label=True)
-        test_dataset    = BuildDataset(self.data_path, self.test_idx,
-                                       crop_size=self.im_size, scale_size=(1.0, 1.0),
-                                       augmentation=False, train=False, is_label=True)
+        test_dataset = BuildDataset(self.data_path, self.test_idx,
+                                    crop_size=self.im_size, scale_size=(1.0, 1.0),
+                                    augmentation=False, train=False, is_label=True)
 
         if supervised:  # no unlabelled dataset needed, double batch-size to match the same number of training samples
             self.batch_size = self.batch_size * 2
 
+        # num_samples: 5 * 200 = 1000
         num_samples = self.batch_size * 200  # for total 40k iterations with 200 epochs
         # num_samples = self.batch_size * 2
         train_l_loader = torch.utils.data.DataLoader(
@@ -225,7 +231,6 @@ class BuildDataLoader:
                                           replacement=True,
                                           num_samples=num_samples),
             drop_last=True,)
-
 
         valid_l_loader = torch.utils.data.DataLoader(
             valid_l_dataset,

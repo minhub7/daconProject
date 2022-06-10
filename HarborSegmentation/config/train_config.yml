@@ -4,7 +4,7 @@ DIRECTORY:
 TRAINER :
   model: deeplabv3p
   optimizer: adamw
-  learning_rate: 5.0e-4
+  learning_rate: 2.0e-4
   n_epochs: 200
   early_stopping_target: val_mIoU
   early_stopping_patience: 10
@@ -25,6 +25,7 @@ MODEL:
 
 DATALOADER:
   batch_size: 5
+  train_test_split: 0.2
 
 LOGGER:
   wandb: True

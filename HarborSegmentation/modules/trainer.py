@@ -6,6 +6,7 @@ from modules.losses import *
 from modules.utils import *
 from modules.datasets import batch_transform
 from modules.utils import generate_unsup_data, label_onehot
+import torch
 from time import time
 import pandas as pd
 from tqdm import tqdm
@@ -25,7 +26,7 @@ class Trainer():
         self.model = model
         self.ema = ema
         self.data_loader = data_loader
-        self.config =config
+        self.config = config
         self.optimizer = optimizer
         self.device = device
         self.logger = logger
@@ -34,23 +35,24 @@ class Trainer():
 
         # History
         self.loss_sum = 0  # Epoch loss sum
-        self.loss_mean = 0 # Epoch loss mean
+        self.loss_mean = 0  # Epoch loss mean
         self.score_dict = dict()  # metric score
         self.elapsed_time = 0
         
 
     def train(self, train_l_loader, train_u_loader):
-
-        train_l_dataset = iter(train_l_loader)
+        train_l_dataset = iter(train_l_loader)  # BuildDataLoader로 불려진 train_l_loader를 iter() 반복자 객체로 선언
         train_u_dataset = iter(train_u_loader)
-        self.model.train()
+        self.model.train()  # model 모드 설정
         self.ema.model.train()
 
-        train_epoch = len(train_l_loader)
+        train_epoch = len(train_l_loader)   # dataset의 크기만큼 for loop 수행
         start_timestamp = time()
-        l_conf_mat = ConfMatrix(self.data_loader.num_segments)
+        # matrix size = 5
+        l_conf_mat = ConfMatrix(self.data_loader.num_segments)  # data_loader.num_segments = 5
 
-        for i in tqdm(range(train_epoch)):
+        for i in tqdm(range(train_epoch), desc="Training", ncols=100):
+            # iter 객체의 next 메소드를 통해 __getitem__ 메소드 호출
             train_l_data, train_l_label = train_l_dataset.next()
             train_l_data, train_l_label = train_l_data.to(self.device), train_l_label.to(self.device)
 
@@ -87,7 +89,7 @@ class Trainer():
             pred_u, rep_u = self.model(train_u_aug_data)
             pred_u_large = F.interpolate(pred_u, size=train_l_label.shape[1:], mode='bilinear', align_corners=True)
 
-            rep_all = torch.cat((rep_l, rep_u))
+            rep_all = torch.cat((rep_l, rep_u))  # rep_l과 rep_u를 합침
             pred_all = torch.cat((pred_l, pred_u))
 
             # supervised-learning loss
@@ -148,7 +150,7 @@ class Trainer():
             self.ema.model.eval()
             valid_dataset = iter(valid_l_loader)
             valid_conf_mat = ConfMatrix(self.data_loader.num_segments)
-            for i in range(valid_epoch):
+            for i in tqdm(range(valid_epoch), desc="Validation", ncols=100):
                 valid_data, valid_label = valid_dataset.next()
                 valid_data, valid_label = valid_data.to(self.device), valid_label.to(self.device)
 
@@ -160,29 +162,29 @@ class Trainer():
 
     def inference(self, test_loader, save_path, sample_submission):
         # batch size of the test loader should be 1
-        class_map = {0:None, 1:'container_truck', 2:'forklift', 3:'reach_stacker', 4:'ship'}
-
-        test_epoch = len(test_loader)
+        class_map = {0: 'container_truck', 1: 'forklift', 2: 'reach_stacker', 3: 'ship'}
+        test_size = len(test_loader)
         file_names = []
         classes = []
         predictions = []
         with torch.no_grad():
             self.ema.model.eval()
             test_dataset = iter(test_loader)
-            for i in tqdm(range(test_epoch)):
+            for i in tqdm(range(test_size), desc="Inference", ncols=100):
                 test_data, img_size, filename = test_dataset.next()
                 test_data = test_data.to(self.device)
                 pred, _ = self.ema.model(test_data)
                 pred_u_large_raw = F.interpolate(pred, size=img_size[0].tolist(), mode='bilinear', align_corners=True)
-                class_num = pred_u_large_raw[0].sum(dim=(1,2))[1:].argmax().item()
+                class_num = pred_u_large_raw[0].sum(dim=(1, 2))[1:].argmax().item()
                 class_of_image = class_map[class_num]
-                class_mask = (pred_u_large_raw[0][class_num + 1] -  pred_u_large_raw[0][0] > 0).int().cpu().numpy()
+                # mask를 계산하는 부분
+                class_mask = (pred_u_large_raw[0][class_num + 1] - pred_u_large_raw[0][0] > 0).int().cpu().numpy()
                 coverted_coordinate = mask_to_coordinates(class_mask)
                 file_names.append(filename[0])
                 classes.append(class_of_image)
                 predictions.append(coverted_coordinate)
 
-        submission_df = pd.DataFrame({'file_name':file_names, 'class':classes, 'prediction':predictions})
+        submission_df = pd.DataFrame({'file_name': file_names, 'class': classes, 'prediction': predictions})
         submission_df = pd.merge(sample_submission['file_name'], submission_df, left_on='file_name', right_on='file_name', how='left')
         submission_df.to_csv(save_path, index=False, encoding='utf-8')
 

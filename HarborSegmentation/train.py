@@ -9,6 +9,7 @@ from modules.optimizers import get_optimizer
 from modules.schedulers import PolyLR
 from models.utils import get_model, EMA
 from datetime import datetime, timezone, timedelta
+from tqdm import tqdm
 
 import torch
 import numpy as np
@@ -19,6 +20,7 @@ import copy
 import wandb
 import warnings
 warnings.filterwarnings('ignore')
+os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
 # Root directory
 PROJECT_DIR = os.path.dirname(__file__)
@@ -48,37 +50,30 @@ random.seed(config['TRAINER']['seed'])
 # GPU
 os.environ['CUDA_VISIBLE_DEVICES'] = str(config['TRAINER']['gpu'])
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# device = 'cpu'
 
 if __name__ == '__main__': 
-    """
-    00. Set Logger
-    """
+    # 00. Set Logger - 결과를 results/train 파일에 저장
     logger = get_logger(name='train', dir_=RECORDER_DIR, stream=False)
     logger.info(f"Set Logger {RECORDER_DIR}")
 
-    """
-    01. Load data
-    """
+    # 01. Load data - dataset_path에서 data를 불러옴
     # Dataset
     data_loader = BuildDataLoader(num_labels=config['MODEL']['num_labels'], dataset_path=config['DIRECTORY']['dataset'],
-                                  batch_size=config['DATALOADER']['batch_size'])
+                                  batch_size=config['DATALOADER']['batch_size'], split_size=config['DATALOADER']['train_test_split'])
     train_l_loader, train_u_loader, valid_l_loader, _ = data_loader.build(supervised=False)
     logger.info(f"Load data, train (labeled):{len(train_l_loader)} train (unlabeled):{len(train_u_loader)} val:{len(valid_l_loader)}")
 
-    """
-    02. Set model
-    """
+    # 02. Set model
     # Load model
-    model = get_model(model_name=config['TRAINER']['model'],num_classes=config['MODEL']['num_labels'],
+    model = get_model(model_name=config['TRAINER']['model'], num_classes=config['MODEL']['num_labels'],
                       output_dim=config['MODEL']['output_dim']).to(device)
     ema = EMA(model, 0.99)  # Mean teacher model
 
-    """
-    03. Set trainer
-    """
+    # 03. Set trainer
     # Optimizer
     optimizer = get_optimizer(optimizer_name=config['TRAINER']['optimizer'])
-    optimizer = optimizer(params=model.parameters(),lr=config['TRAINER']['learning_rate'])
+    optimizer = optimizer(params=model.parameters(), lr=config['TRAINER']['learning_rate'])
     scheduler = PolyLR(optimizer, config['TRAINER']['n_epochs'], power=0.9)
 
     # Early stoppper
@@ -109,7 +104,7 @@ if __name__ == '__main__':
     # !Wandb
     if config['LOGGER']['wandb'] == True: ## 사용시 본인 wandb 계정 입력
         wandb_project_serial = 'HarborSegmentation'
-        wandb_username =  'minhub7'
+        wandb_username = 'minhub7'
         wandb.init(project=wandb_project_serial, dir=RECORDER_DIR, entity=wandb_username)
         wandb.run.name = train_serial
         wandb.config.update(config)
