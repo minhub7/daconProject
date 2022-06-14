@@ -5,7 +5,7 @@ TRAINER :
   model: deeplabv3p
   optimizer: adamw
   learning_rate: 2.0e-5
-  n_epochs: 100
+  n_epochs: 200
   early_stopping_target: val_mIoU
   early_stopping_patience: 5
   early_stopping_mode: max #min
@@ -24,8 +24,8 @@ MODEL:
   output_dim: 256
 
 DATALOADER:
-  batch_size: 2
-  train_test_split: 0.2
+  batch_size: 5
+  split_size: 0.2
 
 LOGGER:
   wandb: True
