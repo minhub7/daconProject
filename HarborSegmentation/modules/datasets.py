@@ -207,7 +207,7 @@ class BuildDataLoader:
     def build(self, supervised=False):
         train_l_dataset = BuildDataset(self.data_path, self.train_l_idx,
                                        crop_size=self.crop_size, scale_size=self.scale_size,
-                                       augmentation=True, train=True, is_label=True)
+                                       augmentation=False, train=True, is_label=True)
         train_u_dataset = BuildDataset(self.data_path, self.train_u_idx,
                                        crop_size=self.crop_size, scale_size=(1.0, 1.0),
                                        augmentation=False, train=True, is_label=False)

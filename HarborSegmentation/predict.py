@@ -70,4 +70,4 @@ if __name__ == '__main__':
                       interval=None)
 
     sample_submission_df = pd.read_csv(os.path.join(predict_config['DIRECTORY']['sample_submission'], 'sample_submission.csv'))
-    trainer.inference(test_loader=test_loader, save_path=os.path.join(PREDICT_DIR, 'submission_modify_inference_func.csv'), sample_submission=sample_submission_df)
+    trainer.inference(test_loader=test_loader, save_path=os.path.join(PREDICT_DIR, 'submission_nunAugmentation.csv'), sample_submission=sample_submission_df)

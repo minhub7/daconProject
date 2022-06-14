@@ -2,7 +2,7 @@ DIRECTORY:
   sample_submission: './submissions' #개발 경로에 맞게 수정하세요!
 
 TRAIN:
-  train_serial: '20220609_160517'
+  train_serial: '20220614_103250'
 
 PREDICT:
   seed: 42
