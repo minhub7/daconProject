@@ -60,7 +60,7 @@ if __name__ == '__main__':
     # 01. Load data - dataset_path에서 data를 불러옴
     # Dataset
     data_loader = BuildDataLoader(num_labels=config['MODEL']['num_labels'], dataset_path=config['DIRECTORY']['dataset'],
-                                  batch_size=config['DATALOADER']['batch_size'], split_size=config['DATALOADER']['train_test_split'])
+                                  batch_size=config['DATALOADER']['batch_size'], split_size=config['DATALOADER']['split_size'])
     train_l_loader, train_u_loader, valid_l_loader, _ = data_loader.build(supervised=False)
     logger.info(f"Load data, train (labeled):{len(train_l_loader)} train (unlabeled):{len(train_u_loader)} val:{len(valid_l_loader)}")
 
