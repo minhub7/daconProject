@@ -13,16 +13,7 @@ from tqdm import tqdm
 
 class Trainer():
 
-    def __init__(self,
-                 model,
-                 ema,
-                 data_loader,
-                 optimizer,
-                 device,
-                 config,
-                 logger, 
-                 interval=100):
-        
+    def __init__(self, model, ema, data_loader, optimizer, device, config, logger, interval=100):
         self.model = model
         self.ema = ema
         self.data_loader = data_loader
@@ -38,36 +29,46 @@ class Trainer():
         self.loss_mean = 0  # Epoch loss mean
         self.score_dict = dict()  # metric score
         self.elapsed_time = 0
-        
 
     def train(self, train_l_loader, train_u_loader):
         train_l_dataset = iter(train_l_loader)  # BuildDataLoader로 불려진 train_l_loader를 iter() 반복자 객체로 선언
         train_u_dataset = iter(train_u_loader)
-        self.model.train()  # model 모드 설정
-        self.ema.model.train()
+        self.model.train()  # model train 모드로 설정
+        self.ema.model.train()  # model train 모드로 설정
 
-        train_epoch = len(train_l_loader)   # dataset의 크기만큼 for loop 수행
+        train_size = len(train_l_loader)   # dataset의 크기만큼 for loop 수행
         start_timestamp = time()
-        # matrix size = 5
         l_conf_mat = ConfMatrix(self.data_loader.num_segments)  # data_loader.num_segments = 5
 
-        for i in tqdm(range(train_epoch), desc="Training", ncols=100):
+        for i in tqdm(range(train_size), desc="Training", ncols=100):
             # iter 객체의 next 메소드를 통해 __getitem__ 메소드 호출
+            # print("\nStart Train")
             train_l_data, train_l_label = train_l_dataset.next()
             train_l_data, train_l_label = train_l_data.to(self.device), train_l_label.to(self.device)
-
             train_u_data = train_u_dataset.next()
             train_u_data = train_u_data.to(self.device)
-
+            # print(f"\ntrain_u_loader file name is {train_u_loader.dataset.filename}")
             self.optimizer.zero_grad()
 
+            # print("Start generate pseudo-labels")
             # generate pseudo-labels
-            with torch.no_grad():
+            with torch.no_grad():  # no_grad()를 사용하는 이유는 unlabeled_data 라서
                 pred_u, _ = self.ema.model(train_u_data)
-                pred_u_large_raw = F.interpolate(pred_u, size=train_u_data.shape[2:], mode='bilinear',
-                                                 align_corners=True)
-                pseudo_logits, pseudo_labels = torch.max(torch.softmax(pred_u_large_raw, dim=1), dim=1)
+                # print(f"\nprint train_u_data shape: {train_u_data.shape}")
+                #
+                # print("Start augmentation")
 
+                pred_u_large_raw = F.interpolate(pred_u, size=train_u_data.shape[2:], mode='bilinear', align_corners=True)
+                # print(f"\nprint pred_u_large_raw shape: {pred_u_large_raw.shape}")
+                # softmax 함수로 각 행의 원소를 확률값으로 만든 후 max값 추출 - 어떤 labels에 해당하는 지 판단 가능
+                pseudo_logits, pseudo_labels = torch.max(torch.softmax(pred_u_large_raw, dim=1), dim=1)  # output (max, max_indices)
+                # print(f"pseudo_logits, pseudo_labels is {pseudo_logits} {pseudo_labels}")
+
+                # for logit, label in zip(pseudo_logits, pseudo_labels):
+                #     print(f"logit = {logit[0]}\n logit_size = {logit[0].shape} ,\n label = {label[0]}\n label_size = {label[0].shape}")
+                #     break
+
+                # print("Start Batch transform")
                 # random scale images first
                 train_u_aug_data, train_u_aug_label, train_u_aug_logits = \
                     batch_transform(train_u_data, pseudo_labels, pseudo_logits,
@@ -81,6 +82,8 @@ class Trainer():
                 train_u_aug_data, train_u_aug_label, train_u_aug_logits = \
                     batch_transform(train_u_aug_data, train_u_aug_label, train_u_aug_logits,
                                     self.data_loader.crop_size, (1.0, 1.0), apply_augmentation=True)
+
+            # print("Start loss calculate")
 
             # generate labelled and unlabelled data loss
             pred_l, rep_l = self.model(train_l_data)
@@ -132,11 +135,11 @@ class Trainer():
 
             # Logging
             if i % self.interval == 0:
-                msg = f"batch: {i}/{train_epoch} loss: {loss.item()}"
+                msg = f"batch: {i}/{train_size} loss: {loss.item()}"
                 self.logger.info(msg)
                 
         # Epoch history
-        self.loss_mean = self.loss_sum / train_epoch  # Epoch loss mean
+        self.loss_mean = self.loss_sum / train_size  # Epoch loss mean
         self.mIoU, _ = l_conf_mat.get_metrics()
         self.score_dict['mIoU'] = self.mIoU
 

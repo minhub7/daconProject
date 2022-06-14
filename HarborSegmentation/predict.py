@@ -9,6 +9,7 @@ import numpy as np
 import random
 import os
 import torch
+import torch.nn as nn
 import pandas as pd
 from models.utils import get_model, EMA
 import warnings
@@ -55,6 +56,8 @@ if __name__ == '__main__':
     # Load model
     model = get_model(model_name=train_config['TRAINER']['model'], num_classes=train_config['MODEL']['num_labels'],
                       output_dim=train_config['MODEL']['output_dim']).to(device)
+    if torch.cuda.device_count() > 1:
+        model = nn.DataParallel(model)#.to(device)
     checkpoint = torch.load(os.path.join(RECORDER_DIR, 'model.pt'))
     model.load_state_dict(checkpoint['model'])
     ema = EMA(model, 0.99)  # Mean teacher model
@@ -70,4 +73,4 @@ if __name__ == '__main__':
                       interval=None)
 
     sample_submission_df = pd.read_csv(os.path.join(predict_config['DIRECTORY']['sample_submission'], 'sample_submission.csv'))
-    trainer.inference(test_loader=test_loader, save_path=os.path.join(PREDICT_DIR, 'submission_modify_inference_func.csv'), sample_submission=sample_submission_df)
+    trainer.inference(test_loader=test_loader, save_path=os.path.join(PREDICT_DIR, 'sub_crop400.csv'), sample_submission=sample_submission_df)

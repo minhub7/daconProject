@@ -16,7 +16,7 @@ import os
 def transform(image, label=None, logits=None, crop_size=(512, 512), scale_size=(0.8, 1.0), augmentation=True):
     # Random rescale image
     raw_w, raw_h = image.size
-    scale_ratio = random.uniform(scale_size[0], scale_size[1])  # 0.8 ~ 1.0 사이 사이즈로 scale
+    scale_ratio = random.uniform(scale_size[0], scale_size[1])  # 0.8 ~ 1.0 사이 사이즈로 resize
 
     resized_size = (int(raw_h * scale_ratio), int(raw_w * scale_ratio))
     image = transforms_f.resize(image, resized_size, Image.BILINEAR)
@@ -30,6 +30,7 @@ def transform(image, label=None, logits=None, crop_size=(512, 512), scale_size=(
         crop_size = (raw_h, raw_w)
 
     # Resized image가 crop_size보다 작을 경우 padding 수행
+    # cropping을 하는 이유? -> augmentation 위해서
     if crop_size[0] > resized_size[0] or crop_size[1] > resized_size[1]:
         right_pad, bottom_pad = max(crop_size[1] - resized_size[1], 0), max(crop_size[0] - resized_size[0], 0)
         image = transforms_f.pad(image, padding=(0, 0, right_pad, bottom_pad), padding_mode='reflect')
@@ -157,15 +158,18 @@ class BuildDataset(Dataset):
         self.idx_list = idx_list
         self.scale_size = scale_size
         self.is_label = is_label
+        self.filename = ''
 
     def __getitem__(self, index):
         if self.train:
             if self.is_label:
                 image_root = Image.open(self.root + f'/train/labeled_images/{self.idx_list[index]}.jpg')
                 label_root = Image.open(self.root + f'/train/labels/{self.idx_list[index]}.png')
+                self.filename = self.root + f'/train/labeled_images/{self.idx_list[index]}.jpg'
             else:
                 image_root = Image.open(self.root + f'/train/unlabeled_images/{self.idx_list[index]}.jpg')
                 label_root = None
+                self.filename = self.root + f'/train/unlabeled_images/{self.idx_list[index]}.jpg'
 
             # augmentation 수행, label의 0인 차원 삭제 (squeeze)
             image, label = transform(image_root, label_root, None, self.crop_size, self.scale_size, self.augmentation)
@@ -190,7 +194,7 @@ class BuildDataLoader:
     def __init__(self, num_labels, dataset_path, batch_size, split_size=0.1):
         self.data_path = dataset_path
         self.im_size = [513, 513]
-        self.crop_size = [321, 321]  # original: 321, 321
+        self.crop_size = [400, 400]  # original: 321, 321
         self.num_segments = 5   # ConfMatrix()에 들어가는 파라미터
         self.scale_size = (0.5, 1.5)
         self.batch_size = batch_size

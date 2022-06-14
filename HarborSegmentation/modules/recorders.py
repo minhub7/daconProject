@@ -84,12 +84,12 @@ class Recorder():
         """
         check_point = {
             'epoch': epoch + 1,
-            'model': self.model.state_dict(),
+            'model': self.model.state_dict(),  # 'model': self.model.module.state_dict(),
             'optimizer': self.optimizer.state_dict(),
             'scheduler': self.scheduler.state_dict() if self.scheduler else None,
         }
         torch.save(check_point, self.weight_path)
-        #torch.save(self.model.state_dict(), self.weight_path)
+        # torch.save(self.model.state_dict(), self.weight_path)
         msg = f"Recorder, epoch {epoch} Model saved: {self.weight_path}"
         self.logger.info(msg) if self.logger else None
 
