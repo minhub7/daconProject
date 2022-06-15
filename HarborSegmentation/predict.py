@@ -43,9 +43,11 @@ random.seed(predict_config['PREDICT']['seed'])
 os.environ['CUDA_VISIBLE_DEVICES'] = str(predict_config['PREDICT']['gpu'])
 
 if __name__ == '__main__':
-
     # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print('Device:', device)
+    print('Current cuda device:', torch.cuda.current_device())
+    print('Count of using GPUs:', torch.cuda.device_count())
     
     # Load data
     data_loader = BuildDataLoader(num_labels=train_config['MODEL']['num_labels'], dataset_path=train_config['DIRECTORY']['dataset'],
@@ -55,6 +57,8 @@ if __name__ == '__main__':
     # Load model
     model = get_model(model_name=train_config['TRAINER']['model'], num_classes=train_config['MODEL']['num_labels'],
                       output_dim=train_config['MODEL']['output_dim']).to(device)
+    if torch.cuda.device_count() > 1:
+        model = torch.nn.DataParallel(model)
     checkpoint = torch.load(os.path.join(RECORDER_DIR, 'model.pt'))
     model.load_state_dict(checkpoint['model'])
     ema = EMA(model, 0.99)  # Mean teacher model
