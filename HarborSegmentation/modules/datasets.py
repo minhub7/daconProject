@@ -53,22 +53,29 @@ def transform(image, label=None, logits=None, crop_size=(512, 512), scale_size=(
             color_transform = transforms.ColorJitter((0.75, 1.25), (0.75, 1.25), (0.75, 1.25), (-0.25, 0.25))  # For PyTorch 1.9/TorchVision 0.10 users
             #color_transform = transforms.ColorJitter.get_params((0.75, 1.25), (0.75, 1.25), (0.75, 1.25), (-0.25, 0.25))
             image = color_transform(image)
-            torchvision.utils.save_image(image, filename.split('.')[0] + '_color_jitter.jpg')
+            print(f"\nfilename in transform func: {filename.split('.jpg')[0] + '_color_jitter.jpg'}")
+            if filename != '':
+                image.save(filename.split('.jpg')[0] + '_color_jitter.jpg', 'JPEG')
 
         # Random Gaussian filter
         if torch.rand(1) > 0.5:
             sigma = random.uniform(0.15, 1.15)
             image = image.filter(ImageFilter.GaussianBlur(radius=sigma))
-            torchvision.utils.save_image(image, filename.split('.')[0] + '_Gaussian_filter.jpg')
+            print(f"filename in transform func: {filename.split('.jpg')[0] + '_Gaussian_filter.jpg'}")
+            if filename != '':
+                image.save(filename.split('.jpg')[0] + '_Gaussian_filter.jpg', 'JPEG')
 
         # Random horizontal flipping
         if torch.rand(1) > 0.5:
             image = transforms_f.hflip(image)
+            print(f"filename in transform func: {filename.split('.jpg')[0] + '_flipping.jpg'}")
             if label is not None:
                 label = transforms_f.hflip(label)
             if logits is not None:
                 logits = transforms_f.hflip(logits)
-            torchvision.utils.save_image(image, filename.split('.')[0] + '_flipping.jpg')
+            if filename.split('.jpg')[0] != '':
+                image.save(filename.split('.jpg')[0] + '_flipping.jpg', 'JPEG')
+                # torchvision.utils.save_image(image, filename.split('.')[0] + '_flipping.jpg')
 
     # Transform to tensor
     image = transforms_f.to_tensor(image)
@@ -103,7 +110,7 @@ def tensor_to_pil(im, label, logits):
     logits = transforms_f.to_pil_image(logits.unsqueeze(0).cpu())
     return im, label, logits
 
-def batch_transform(data, label, logits, crop_size, scale_size, apply_augmentation, filename):
+def batch_transform(data, label, logits, crop_size, scale_size, apply_augmentation, filename=''):
     data_list, label_list, logits_list = [], [], []
     device = data.device
 
@@ -167,12 +174,12 @@ class BuildDataset(Dataset):
     def __getitem__(self, index):
         if self.train:
             if self.is_label:
-                image_root = Image.open(self.root + f'/train/labeled_images/{self.idx_list[index]}.jpg')
-                label_root = Image.open(self.root + f'/train/labels/{self.idx_list[index]}.png')
-                self.filename = self.root + f'/train/augmented_images/{self.idx_list[index]}.jpg'
+                image_root = Image.open(self.root + f'train/labeled_images/{self.idx_list[index]}.jpg')
+                label_root = Image.open(self.root + f'train/labels/{self.idx_list[index]}.png')
+                self.filename = self.root + f'train/augmented_images/{self.idx_list[index]}.jpg'
             else:
-                image_root = Image.open(self.root + f'/train/unlabeled_images/{self.idx_list[index]}.jpg')
-                self.filename = self.root + f'/train/augmented_images/{self.idx_list[index]}.jpg'
+                image_root = Image.open(self.root + f'train/unlabeled_images/{self.idx_list[index]}.jpg')
+                self.filename = self.root + f'train/augmented_images/{self.idx_list[index]}.jpg'
                 label_root = None
 
             # augmentation 수행, label의 0인 차원 삭제 (squeeze)
@@ -183,8 +190,8 @@ class BuildDataset(Dataset):
                 return image
         else:
             file_name = f'{self.idx_list[index]}.jpg'
-            image_root = Image.open(self.root + f'/test/images/{file_name}')
-            self.filename = self.root + f'/test/images/{file_name}'
+            image_root = Image.open(self.root + f'test/images/{file_name}')
+            self.filename = self.root + f'test/images/{file_name}'
             image, label = transform(image_root, None, None, self.crop_size, self.scale_size, self.augmentation, self.filename)
             return image, torch.tensor(image_root.size), file_name
 

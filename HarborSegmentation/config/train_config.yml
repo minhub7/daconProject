@@ -9,7 +9,7 @@ TRAINER :
   early_stopping_target: val_mIoU
   early_stopping_patience: 10
   early_stopping_mode: max #min
-  gpu: 0
+  gpu: 1
   seed: 42
   apply_aug: cutout
   weak_threshold: 0.7
