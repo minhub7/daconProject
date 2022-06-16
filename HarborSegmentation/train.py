@@ -65,9 +65,15 @@ if __name__ == '__main__':
     """ 01. Load data - dataset_path에서 data를 불러옴
     """
     # Dataset
+    AUGMENTED_COUNT = 10
     data_loader = BuildDataLoader(num_labels=config['MODEL']['num_labels'], dataset_path=config['DIRECTORY']['dataset'],
                                   batch_size=config['DATALOADER']['batch_size'], split_size=config['DATALOADER']['split_size'])
-    train_l_loader, train_u_loader, valid_l_loader, _ = data_loader.build(supervised=False)
+
+    _, train_u_loader, valid_l_loader, _ = data_loader.build(supervised=False)
+    train_l_loader = []
+    for i in range(AUGMENTED_COUNT):
+        train_l_load, _, _, _ = data_loader.build(supervised=False)
+        train_l_loader.append(train_l_load)
     logger.info(f"Load data, train (labeled):{len(train_l_loader)} train (unlabeled):{len(train_u_loader)} val:{len(valid_l_loader)}")
 
     """ 02. Set model
@@ -132,20 +138,21 @@ if __name__ == '__main__':
         row_dict = dict()
         row_dict['epoch_index'] = epoch_index
         row_dict['train_serial'] = train_serial
-        
-        """ Train
-        """
-        print(f"Train {epoch_index}/{n_epochs}")
-        logger.info(f"--Train {epoch_index}/{n_epochs}")
-        trainer.train(train_l_loader=train_l_loader, train_u_loader=train_u_loader)
-        
+
+        for i in range(AUGMENTED_COUNT):
+            """ Train
+            """
+            print(f"Train {epoch_index}/{n_epochs} -------------------- {i}th")
+            logger.info(f"--Train {epoch_index}/{n_epochs} --- {i}th")
+            trainer.train(train_l_loader=train_l_loader[i], train_u_loader=train_u_loader)
+
         row_dict['train_loss'] = trainer.loss_mean
-        row_dict['train_elapsed_time'] = trainer.elapsed_time 
-        
+        row_dict['train_elapsed_time'] = trainer.elapsed_time
+
         for metric_str, score in trainer.score_dict.items():
             row_dict[f"train_{metric_str}"] = score
         trainer.clear_history()
-        
+
         """ Validation
         """
         print(f"Val {epoch_index}/{n_epochs}")
@@ -165,7 +172,7 @@ if __name__ == '__main__':
         recorder.save_plot(config['LOGGER']['plot'])
 
         #!WANDB
-        if config['LOGGER']['wandb'] == True:
+        if config['LOGGER']['wandb']:
             wandb.log(row_dict)
 
         """ Early stopper
@@ -177,9 +184,9 @@ if __name__ == '__main__':
             recorder.save_weight(epoch=epoch_index)
             best_row_dict = copy.deepcopy(row_dict)
         
-        if early_stopper.stop == True:
-            logger.info(f"Eearly stopped, coutner {early_stopper.patience_counter}/{config['TRAINER']['early_stopping_patience']}")
+        if early_stopper.stop:
+            logger.info(f"Early stopped, counter {early_stopper.patience_counter}/{config['TRAINER']['early_stopping_patience']}")
             
-            if config['LOGGER']['wandb'] == True:
+            if config['LOGGER']['wandb']:
                 wandb.log(best_row_dict)
             break

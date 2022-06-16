@@ -7,7 +7,7 @@ TRAINER :
   learning_rate: 2.0e-5
   n_epochs: 200
   early_stopping_target: val_mIoU
-  early_stopping_patience: 5
+  early_stopping_patience: 10
   early_stopping_mode: max #min
   gpu: 0
   seed: 42

@@ -3,6 +3,7 @@ from PIL import Image
 from PIL import ImageFilter
 import random
 import torch.utils.data.sampler as sampler
+import torchvision.utils
 import torchvision.transforms as transforms
 import torchvision.transforms.functional as transforms_f
 import torch
@@ -13,7 +14,7 @@ import os
 # --------------------------------------------------------------------------------
 # Define data augmentation
 # --------------------------------------------------------------------------------
-def transform(image, label=None, logits=None, crop_size=(512, 512), scale_size=(0.8, 1.0), augmentation=True):
+def transform(image, label=None, logits=None, crop_size=(512, 512), scale_size=(0.8, 1.0), augmentation=True, filename=''):
     # Random rescale image
     raw_w, raw_h = image.size
     scale_ratio = random.uniform(scale_size[0], scale_size[1])  # 0.8 ~ 1.0 사이 사이즈로 scale
@@ -52,11 +53,13 @@ def transform(image, label=None, logits=None, crop_size=(512, 512), scale_size=(
             color_transform = transforms.ColorJitter((0.75, 1.25), (0.75, 1.25), (0.75, 1.25), (-0.25, 0.25))  # For PyTorch 1.9/TorchVision 0.10 users
             #color_transform = transforms.ColorJitter.get_params((0.75, 1.25), (0.75, 1.25), (0.75, 1.25), (-0.25, 0.25))
             image = color_transform(image)
+            torchvision.utils.save_image(image, filename.split('.')[0] + '_color_jitter.jpg')
 
         # Random Gaussian filter
         if torch.rand(1) > 0.5:
             sigma = random.uniform(0.15, 1.15)
             image = image.filter(ImageFilter.GaussianBlur(radius=sigma))
+            torchvision.utils.save_image(image, filename.split('.')[0] + '_Gaussian_filter.jpg')
 
         # Random horizontal flipping
         if torch.rand(1) > 0.5:
@@ -65,6 +68,7 @@ def transform(image, label=None, logits=None, crop_size=(512, 512), scale_size=(
                 label = transforms_f.hflip(label)
             if logits is not None:
                 logits = transforms_f.hflip(logits)
+            torchvision.utils.save_image(image, filename.split('.')[0] + '_flipping.jpg')
 
     # Transform to tensor
     image = transforms_f.to_tensor(image)
@@ -99,7 +103,7 @@ def tensor_to_pil(im, label, logits):
     logits = transforms_f.to_pil_image(logits.unsqueeze(0).cpu())
     return im, label, logits
 
-def batch_transform(data, label, logits, crop_size, scale_size, apply_augmentation):
+def batch_transform(data, label, logits, crop_size, scale_size, apply_augmentation, filename):
     data_list, label_list, logits_list = [], [], []
     device = data.device
 
@@ -108,7 +112,8 @@ def batch_transform(data, label, logits, crop_size, scale_size, apply_augmentati
         aug_data, aug_label, aug_logits = transform(data_pil, label_pil, logits_pil,
                                                     crop_size=crop_size,
                                                     scale_size=scale_size,
-                                                    augmentation=apply_augmentation)
+                                                    augmentation=apply_augmentation,
+                                                    filename=filename)
         data_list.append(aug_data.unsqueeze(0))
         label_list.append(aug_label)
         logits_list.append(aug_logits)
@@ -157,18 +162,21 @@ class BuildDataset(Dataset):
         self.idx_list = idx_list
         self.scale_size = scale_size
         self.is_label = is_label
+        self.filename = ''
 
     def __getitem__(self, index):
         if self.train:
             if self.is_label:
                 image_root = Image.open(self.root + f'/train/labeled_images/{self.idx_list[index]}.jpg')
                 label_root = Image.open(self.root + f'/train/labels/{self.idx_list[index]}.png')
+                self.filename = self.root + f'/train/augmented_images/{self.idx_list[index]}.jpg'
             else:
                 image_root = Image.open(self.root + f'/train/unlabeled_images/{self.idx_list[index]}.jpg')
+                self.filename = self.root + f'/train/augmented_images/{self.idx_list[index]}.jpg'
                 label_root = None
 
             # augmentation 수행, label의 0인 차원 삭제 (squeeze)
-            image, label = transform(image_root, label_root, None, self.crop_size, self.scale_size, self.augmentation)
+            image, label = transform(image_root, label_root, None, self.crop_size, self.scale_size, self.augmentation, self.filename)
             if label is not None:
                 return image, label.squeeze(0)
             else:
@@ -176,7 +184,8 @@ class BuildDataset(Dataset):
         else:
             file_name = f'{self.idx_list[index]}.jpg'
             image_root = Image.open(self.root + f'/test/images/{file_name}')
-            image, label = transform(image_root, None, None, self.crop_size, self.scale_size, self.augmentation)
+            self.filename = self.root + f'/test/images/{file_name}'
+            image, label = transform(image_root, None, None, self.crop_size, self.scale_size, self.augmentation, self.filename)
             return image, torch.tensor(image_root.size), file_name
 
     def __len__(self):
