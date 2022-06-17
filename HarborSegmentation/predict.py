@@ -51,7 +51,7 @@ if __name__ == '__main__':
     
     # Load data
     data_loader = BuildDataLoader(num_labels=train_config['MODEL']['num_labels'], dataset_path=train_config['DIRECTORY']['dataset'],
-                                  batch_size=predict_config['PREDICT']['batch_size'], split_size=train_config['DATALOADER']['train_test_split'])
+                                  batch_size=predict_config['PREDICT']['batch_size'], split_size=train_config['DATALOADER']['split_size'])
     _, _, _, test_loader = data_loader.build(supervised=False)
 
     # Load model
@@ -74,4 +74,4 @@ if __name__ == '__main__':
                       interval=None)
 
     sample_submission_df = pd.read_csv(os.path.join(predict_config['DIRECTORY']['sample_submission'], 'sample_submission.csv'))
-    trainer.inference(test_loader=test_loader, save_path=os.path.join(PREDICT_DIR, 'submit_l_repeat10.csv'), sample_submission=sample_submission_df)
+    trainer.inference(test_loader=test_loader, save_path=os.path.join(PREDICT_DIR, 'submit_repeat10.csv'), sample_submission=sample_submission_df)

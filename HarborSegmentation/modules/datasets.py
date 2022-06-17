@@ -54,7 +54,7 @@ def transform(image, label=None, logits=None, crop_size=(512, 512), scale_size=(
             #color_transform = transforms.ColorJitter.get_params((0.75, 1.25), (0.75, 1.25), (0.75, 1.25), (-0.25, 0.25))
             image = color_transform(image)
             print(f"\nfilename in transform func: {filename.split('.jpg')[0] + '_color_jitter.jpg'}")
-            if filename != '':
+            if filename.split('.jpg')[0] != '':
                 image.save(filename.split('.jpg')[0] + '_color_jitter.jpg', 'JPEG')
 
         # Random Gaussian filter
@@ -62,7 +62,7 @@ def transform(image, label=None, logits=None, crop_size=(512, 512), scale_size=(
             sigma = random.uniform(0.15, 1.15)
             image = image.filter(ImageFilter.GaussianBlur(radius=sigma))
             print(f"filename in transform func: {filename.split('.jpg')[0] + '_Gaussian_filter.jpg'}")
-            if filename != '':
+            if filename.split('.jpg')[0] != '':
                 image.save(filename.split('.jpg')[0] + '_Gaussian_filter.jpg', 'JPEG')
 
         # Random horizontal flipping
