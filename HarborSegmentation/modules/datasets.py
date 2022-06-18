@@ -53,28 +53,28 @@ def transform(image, label=None, logits=None, crop_size=(512, 512), scale_size=(
             color_transform = transforms.ColorJitter((0.75, 1.25), (0.75, 1.25), (0.75, 1.25), (-0.25, 0.25))  # For PyTorch 1.9/TorchVision 0.10 users
             #color_transform = transforms.ColorJitter.get_params((0.75, 1.25), (0.75, 1.25), (0.75, 1.25), (-0.25, 0.25))
             image = color_transform(image)
-            print(f"\nfilename in transform func: {filename.split('.jpg')[0] + '_color_jitter.jpg'}")
-            if filename.split('.jpg')[0] != '':
-                image.save(filename.split('.jpg')[0] + '_color_jitter.jpg', 'JPEG')
+            # print(f"\nfilename in transform func: {filename.split('.jpg')[0] + '_color_jitter.jpg'}")
+            # if filename.split('.jpg')[0] != '':
+            #     image.save(filename.split('.jpg')[0] + '_color_jitter.jpg', 'JPEG')
 
         # Random Gaussian filter
         if torch.rand(1) > 0.5:
             sigma = random.uniform(0.15, 1.15)
             image = image.filter(ImageFilter.GaussianBlur(radius=sigma))
-            print(f"filename in transform func: {filename.split('.jpg')[0] + '_Gaussian_filter.jpg'}")
-            if filename.split('.jpg')[0] != '':
-                image.save(filename.split('.jpg')[0] + '_Gaussian_filter.jpg', 'JPEG')
+            # print(f"filename in transform func: {filename.split('.jpg')[0] + '_Gaussian_filter.jpg'}")
+            # if filename.split('.jpg')[0] != '':
+            #     image.save(filename.split('.jpg')[0] + '_Gaussian_filter.jpg', 'JPEG')
 
         # Random horizontal flipping
         if torch.rand(1) > 0.5:
             image = transforms_f.hflip(image)
-            print(f"filename in transform func: {filename.split('.jpg')[0] + '_flipping.jpg'}")
+            # print(f"filename in transform func: {filename.split('.jpg')[0] + '_flipping.jpg'}")
             if label is not None:
                 label = transforms_f.hflip(label)
             if logits is not None:
                 logits = transforms_f.hflip(logits)
-            if filename.split('.jpg')[0] != '':
-                image.save(filename.split('.jpg')[0] + '_flipping.jpg', 'JPEG')
+            # if filename.split('.jpg')[0] != '':
+            #     image.save(filename.split('.jpg')[0] + '_flipping.jpg', 'JPEG')
                 # torchvision.utils.save_image(image, filename.split('.')[0] + '_flipping.jpg')
 
     # Transform to tensor
@@ -114,16 +114,17 @@ def batch_transform(data, label, logits, crop_size, scale_size, apply_augmentati
     data_list, label_list, logits_list = [], [], []
     device = data.device
 
-    for k in range(data.shape[0]):  # 행 범위 만큼 반복 - ex) 480 * 360 -> range(480)
-        data_pil, label_pil, logits_pil = tensor_to_pil(data[k], label[k], logits[k])
-        aug_data, aug_label, aug_logits = transform(data_pil, label_pil, logits_pil,
-                                                    crop_size=crop_size,
-                                                    scale_size=scale_size,
-                                                    augmentation=apply_augmentation,
-                                                    filename=filename)
-        data_list.append(aug_data.unsqueeze(0))
-        label_list.append(aug_label)
-        logits_list.append(aug_logits)
+    for i in range(3):
+        for k in range(data.shape[0]):  # 행 범위 만큼 반복 - ex) 480 * 360 -> range(480)
+            data_pil, label_pil, logits_pil = tensor_to_pil(data[k], label[k], logits[k])
+            aug_data, aug_label, aug_logits = transform(data_pil, label_pil, logits_pil,
+                                                        crop_size=crop_size,
+                                                        scale_size=scale_size,
+                                                        augmentation=apply_augmentation,
+                                                        filename=filename)
+            data_list.append(aug_data.unsqueeze(0))
+            label_list.append(aug_label)
+            logits_list.append(aug_logits)
 
     data_trans, label_trans, logits_trans = \
         torch.cat(data_list).to(device), torch.cat(label_list).to(device), torch.cat(logits_list).to(device)

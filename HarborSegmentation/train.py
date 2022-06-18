@@ -65,7 +65,7 @@ if __name__ == '__main__':
     """ 01. Load data - dataset_path에서 data를 불러옴
     """
     # Dataset
-    AUGMENTED_COUNT = 10
+    AUGMENTED_COUNT = 5
     data_loader = BuildDataLoader(num_labels=config['MODEL']['num_labels'], dataset_path=config['DIRECTORY']['dataset'],
                                   batch_size=config['DATALOADER']['batch_size'], split_size=config['DATALOADER']['split_size'])
 
