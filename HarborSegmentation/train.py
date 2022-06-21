@@ -65,7 +65,7 @@ if __name__ == '__main__':
     """ 01. Load data - dataset_path에서 data를 불러옴
     """
     # Dataset
-    AUGMENTED_COUNT = 5
+    AUGMENTED_COUNT = 10
     data_loader = BuildDataLoader(num_labels=config['MODEL']['num_labels'], dataset_path=config['DIRECTORY']['dataset'],
                                   batch_size=config['DATALOADER']['batch_size'], split_size=config['DATALOADER']['split_size'])
 
@@ -74,7 +74,7 @@ if __name__ == '__main__':
     for i in range(AUGMENTED_COUNT):
         train_l_load, _, _, _ = data_loader.build(supervised=False)
         train_l_loader.append(train_l_load)
-    logger.info(f"Load data, train (labeled):{len(train_l_loader)} train (unlabeled):{len(train_u_loader)} val:{len(valid_l_loader)}")
+    logger.info(f"Load data, train (labeled):{len(train_l_loader[0]) * AUGMENTED_COUNT} train (unlabeled):{len(train_u_loader)} val:{len(valid_l_loader)}")
 
     """ 02. Set model
     """

@@ -64,7 +64,7 @@ def transform(image, label=None, logits=None, crop_size=(512, 512), scale_size=(
             # print(f"filename in transform func: {filename.split('.jpg')[0] + '_Gaussian_filter.jpg'}")
             # if filename.split('.jpg')[0] != '':
             #     image.save(filename.split('.jpg')[0] + '_Gaussian_filter.jpg', 'JPEG')
-
+        """
         # Random horizontal flipping
         if torch.rand(1) > 0.5:
             image = transforms_f.hflip(image)
@@ -76,6 +76,7 @@ def transform(image, label=None, logits=None, crop_size=(512, 512), scale_size=(
             # if filename.split('.jpg')[0] != '':
             #     image.save(filename.split('.jpg')[0] + '_flipping.jpg', 'JPEG')
                 # torchvision.utils.save_image(image, filename.split('.')[0] + '_flipping.jpg')
+        """
 
     # Transform to tensor
     image = transforms_f.to_tensor(image)
@@ -114,17 +115,16 @@ def batch_transform(data, label, logits, crop_size, scale_size, apply_augmentati
     data_list, label_list, logits_list = [], [], []
     device = data.device
 
-    for i in range(3):
-        for k in range(data.shape[0]):  # 행 범위 만큼 반복 - ex) 480 * 360 -> range(480)
-            data_pil, label_pil, logits_pil = tensor_to_pil(data[k], label[k], logits[k])
-            aug_data, aug_label, aug_logits = transform(data_pil, label_pil, logits_pil,
-                                                        crop_size=crop_size,
-                                                        scale_size=scale_size,
-                                                        augmentation=apply_augmentation,
-                                                        filename=filename)
-            data_list.append(aug_data.unsqueeze(0))
-            label_list.append(aug_label)
-            logits_list.append(aug_logits)
+    for k in range(data.shape[0]):  # 행 범위 만큼 반복 - ex) 480 * 360 -> range(480)
+        data_pil, label_pil, logits_pil = tensor_to_pil(data[k], label[k], logits[k])
+        aug_data, aug_label, aug_logits = transform(data_pil, label_pil, logits_pil,
+                                                    crop_size=crop_size,
+                                                    scale_size=scale_size,
+                                                    augmentation=apply_augmentation,
+                                                    filename=filename)
+        data_list.append(aug_data.unsqueeze(0))
+        label_list.append(aug_label)
+        logits_list.append(aug_logits)
 
     data_trans, label_trans, logits_trans = \
         torch.cat(data_list).to(device), torch.cat(label_list).to(device), torch.cat(logits_list).to(device)

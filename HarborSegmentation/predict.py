@@ -74,4 +74,4 @@ if __name__ == '__main__':
                       interval=None)
 
     sample_submission_df = pd.read_csv(os.path.join(predict_config['DIRECTORY']['sample_submission'], 'sample_submission.csv'))
-    trainer.inference(test_loader=test_loader, save_path=os.path.join(PREDICT_DIR, 'submit_repeat10.csv'), sample_submission=sample_submission_df)
+    trainer.inference(test_loader=test_loader, save_path=os.path.join(PREDICT_DIR, 'submit_noFlip2.csv'), sample_submission=sample_submission_df)

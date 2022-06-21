@@ -52,7 +52,7 @@ class EarlyStopper():
             # got better score
             self.patience_counter += 1
 
-            msg = f"Early stopper, counter {self.patience_counter}/{self.patience}, best:{abs(self.best_loss)} -> now:{abs(loss)}"
+            msg = f"Early stopper, counter {self.patience_counter}/{self.patience}, now:{abs(loss)} -> best:{abs(self.best_loss)}"
             self.logger.info(msg) if self.logger else None
             
             if self.patience_counter == self.patience:
@@ -66,7 +66,7 @@ class EarlyStopper():
             self.best_loss = loss
             
             if self.logger is not None: #수정 필요할 듯.. loss가 minus scale일 경우 제대로 된 정보 로깅할 수 없음
-                self.logger.info(f"Early stopper, counter {self.patience_counter}/{self.patience}, best:{abs(self.best_loss)} -> now:{abs(loss)}")
+                self.logger.info(f"Early stopper, counter {self.patience_counter}/{self.patience}, now:{abs(loss)} -> best:{abs(self.best_loss)}")
                 self.logger.info(f"Set counter as {self.patience_counter}")
                 self.logger.info(f"Update best score as {abs(loss)}")
 
