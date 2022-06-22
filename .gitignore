@@ -10,6 +10,6 @@ submissions/
 # etc...
 .ipynb_checkpoints
 runs/
-models/
+# models/
 wandb/
 .idea/
