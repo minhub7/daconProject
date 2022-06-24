@@ -31,10 +31,10 @@
 - huggingface의 datasets, transformers 라이브러리 활용하여 코드 토큰화 및 학습 진행
 
   ### Hyperparameter for TrainingArguments
-  - **microsoft/graphcodebert-base**
- 
+  - **CodeSimilarityDetection_Graphcodebert_Kfold_Ensemble.ipynb**
     |**parameter**|**value**|  
-    |---------|-----|  
+    |-------------|:---------:|  
+    |model|microsoft/graphcodebert-base|
     |per_device_train_batch_size|4|  
     |per_device_eval_batch_size|32|  
     |gradient_accumulation_steps|4|  
@@ -42,12 +42,27 @@
     |eval_steps|500|
     |learning_rate|2e-5|  
     |optim|'adamw_torch'|
+    |early_stopping_patience|15|
+    
+  - **graphcodebert5folds1epoch.ipynb for NH**
+    |**parameter**|**value**|  
+    |-------------|:---------:|  
+    |model|microsoft/graphcodebert-base|
+    |optim|'AdamW'|
+    |scheduler|'linear'|
+    |warmup_steps|500|
+    |cycle_mult|1.2|
+    |batch_size|16|  
+    |patience|5|
+    |learning_rate|2e-5|  
+    |criterion|'cross'|
 
 ## @Result
 |Model|Public Accuracy|Private Accuracy|
 |---|:---:|:---:|
-|graphcodebert|0.94057|   |
-|K-fold and Ensemble|0.96463|   |
+|graphcodebert|0.94057||
+|K-fold and Ensemble|0.96463||
+|5-fold and hard-voting for NH|0.9795|0.97946|
 
 
 ## @Update log
