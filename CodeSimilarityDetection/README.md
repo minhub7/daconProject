@@ -7,7 +7,7 @@
 
 ## @Subject
 - 주최: Dacon
-- 주제: 코드 유사성 판단 AI 경진대회 [from here!](https://dacon.io/competitions/official/235900/overview/description)
+- 주제: 코드 유사성 판단 AI 경진대회 ([from here!](https://dacon.io/competitions/official/235900/overview/description))
 - 분야: Code NLP
 - Dataset
   - sample_train.csv: 17,970개의 python code 쌍
