@@ -18,3 +18,13 @@ Machine Learning 기법을 공부하기 위해 진행한 Contest 관련 Project 
 * 주최: 과학기술정보통신부, 정보통신산업진흥원  
 * 주제: 준지도학습 기반의 항만 구조물 객체 분할 (2022 인공지능 경진대회)  
 * 분야: Computer Vision, Semantic-Segmentation, Semi-supervised learning  
+
+
+<!-- Contributors -->
+## Contributors
+
+* Nahyeon Kang - [@NahyeonKang](https://github.com/NahyeonKang)
+* Heonjin Kwon - [@kwon-evan](https://github.com/kwon-evan)
+* Minho Kim - [@minocrafft](https://github.com/minocrafft)
+* Seunghwan Oh - [@oswswo123](https://github.com/oswswo123)
+
